@@ -116,6 +116,7 @@ img,svg{display:block}
   color:var(--primary);display:flex;align-items:center;gap:10px;margin:0 0 10px;
 }
 .kicker::before{content:"";width:26px;height:2px;background:var(--primary);border-radius:2px;flex:none}
+.kicker .i{width:15px;height:15px;flex:none}
 
 /* ---------- Header ---------- */
 .site-header{
@@ -308,7 +309,7 @@ img,svg{display:block}
 .tool-card-rx::before{content:"";position:absolute;inset-inline:30px;top:0;height:6px;border-radius:0 0 5px 5px;
   background:repeating-linear-gradient(90deg,var(--primary) 0 12px,transparent 12px 24px);opacity:.75}
 .tool-card-rx::after{content:"";position:absolute;top:18px;inset-inline-end:22px;font-family:var(--mono);
-  font-size:10px;letter-spacing:.2em;color:var(--text-3);content:"RX-ONLINE"}
+  font-size:10px;letter-spacing:.18em;color:var(--text-3);content:"DR-TOOLS.IR"}
 @media(max-width:640px){.tool-card-rx{padding:34px 18px 20px}}
 
 .related{margin-top:34px}
@@ -383,13 +384,28 @@ img,svg{display:block}
 .badge.info{background:var(--primary-soft);color:var(--primary)}
 
 /* color swatch */
-.swatch{width:100%;height:90px;border-radius:14px;border:1px solid var(--line);box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)}
+.swatch{width:100%;height:90px;border-radius:14px;border:1px solid var(--line);box-shadow:inset 0 0 0 1px rgba(0,0,0,.04);display:flex;align-items:flex-end;position:relative;overflow:hidden}
+.swatch span{display:block;width:100%;padding:6px 8px;font-family:var(--mono);font-size:10px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.55));text-shadow:0 1px 2px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 input[type="color"]{width:56px;height:46px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:4px;cursor:pointer}
 input[type="range"]{accent-color:var(--primary);width:100%}
 
 /* strength meter */
 .meter{height:8px;border-radius:6px;background:var(--line);overflow:hidden}
 .meter i{display:block;height:100%;border-radius:6px;transition:width .35s,background .35s}
+
+/* password strength bar */
+.pstr-bar{height:18px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;position:relative;margin:4px 0 2px}
+.pstr-bar .pstr-fill{display:block;height:100%;border-radius:10px;transition:width .35s,background .35s}
+.pstr-bar .pstr-fill.bad{background:linear-gradient(90deg,#ef4444,#f97316)}
+.pstr-bar .pstr-fill.mid{background:linear-gradient(90deg,#f59e0b,#eab308)}
+.pstr-bar .pstr-fill.good{background:linear-gradient(90deg,#22c55e,#10b981)}
+.pstr-bar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--surface);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+
+/* css previews */
+.shadow-preview{height:130px;border-radius:18px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;margin:2px 0 4px}
+.brd-preview{background:var(--primary-soft)}
+/* palette grid */
+.swatch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 
 /* stat boxes */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
@@ -445,6 +461,9 @@ input[type="range"]{accent-color:var(--primary);width:100%}
 .footer-bottom{border-top:1px dashed var(--line);padding:18px 0;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--text-3)}
 .footer-bottom .privacy-note{display:flex;align-items:center;gap:7px}
 .footer-bottom .privacy-note .i{width:14px;height:14px;color:var(--ok)}
+.footer-bottom .footer-credit{display:flex;align-items:center;gap:6px}
+.footer-bottom .footer-credit a{color:var(--primary);font-weight:600;text-decoration:none;border-bottom:1px solid transparent;transition:border-color .2s}
+.footer-bottom .footer-credit a:hover{border-bottom-color:var(--primary)}
 
 /* reveal animation */
 .reveal{opacity:0;transform:translateY(16px);animation:rise .55s cubic-bezier(.2,.7,.3,1) forwards}
