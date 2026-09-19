@@ -1,8 +1,8 @@
 /* ============================================================
    دکتر ابزار — dr-tools.ir
    Design language: "clinical workshop" — prescription-paper
-   light mode, deep teal + signal amber, mono micro-labels,
-   Rx corner ticks. Dark mode: ink-green with mint glow.
+   light mode, deep navy-blue + signal amber, mono micro-labels,
+   Rx corner ticks. Dark mode: ink-navy with azure glow.
    ============================================================ */
 
 /* ---------- Fonts (self-hosted) ---------- */
@@ -26,9 +26,9 @@
   --text-3:#8A8E82;
   --line:#DDD8C8;
   --line-strong:#C9C3B0;
-  --primary:#0E7C66;
-  --primary-deep:#0A5C4C;
-  --primary-soft:rgba(14,124,102,.09);
+  --primary:#3B82F6;
+  --primary-deep:#1E3A8A;
+  --primary-soft:rgba(59,130,246,.09);
   --on-primary:#FFFFFF;
   --accent:#D97706;
   --accent-soft:rgba(217,119,6,.12);
@@ -36,8 +36,8 @@
   --danger-soft:rgba(185,28,28,.09);
   --ok:#15803D;
   --ok-soft:rgba(21,128,61,.10);
-  --ring:rgba(14,124,102,.35);
-  --glow:rgba(14,124,102,.14);
+  --ring:rgba(59,130,246,.35);
+  --glow:rgba(59,130,246,.14);
   --shadow-sm:0 1px 2px rgba(28,31,26,.06);
   --shadow-md:0 6px 24px -8px rgba(28,31,26,.16);
   --shadow-lg:0 18px 50px -16px rgba(28,31,26,.28);
@@ -48,27 +48,27 @@
   color-scheme:light;
 }
 [data-theme="dark"]{
-  --bg:#0C1210;
-  --bg-soft:#0A0F0D;
-  --surface:#121A16;
-  --surface-2:#0E1613;
-  --text:#E9EFE8;
-  --text-2:#9AA69C;
-  --text-3:#6E7A71;
-  --line:#22302A;
-  --line-strong:#2E4038;
-  --primary:#35D0A5;
-  --primary-deep:#6FE7C4;
-  --primary-soft:rgba(53,208,165,.10);
-  --on-primary:#06231B;
+  --bg:#0A0F1A;
+  --bg-soft:#080C16;
+  --surface:#111827;
+  --surface-2:#0D1421;
+  --text:#E8EDF5;
+  --text-2:#9BA6BC;
+  --text-3:#6E7A91;
+  --line:#1E2A3F;
+  --line-strong:#2A3B55;
+  --primary:#60A5FA;
+  --primary-deep:#93C5FD;
+  --primary-soft:rgba(96,165,250,.10);
+  --on-primary:#0A1628;
   --accent:#F5B04A;
   --accent-soft:rgba(245,176,74,.12);
   --danger:#F87171;
   --danger-soft:rgba(248,113,113,.12);
   --ok:#4ADE80;
   --ok-soft:rgba(74,222,128,.12);
-  --ring:rgba(53,208,165,.35);
-  --glow:rgba(53,208,165,.12);
+  --ring:rgba(96,165,250,.35);
+  --glow:rgba(96,165,250,.12);
   --shadow-sm:0 1px 2px rgba(0,0,0,.4);
   --shadow-md:0 8px 28px -10px rgba(0,0,0,.55);
   --shadow-lg:0 24px 60px -18px rgba(0,0,0,.65);
@@ -129,15 +129,13 @@ img,svg{display:block}
 }
 .brand{display:flex;align-items:center;gap:11px;flex:none}
 .brand-mark{
-  width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+  border-radius:12px;display:grid;place-items:center;
   font-family:var(--mono);font-weight:700;font-size:17px;letter-spacing:-.5px;color:var(--on-primary);
-  background:linear-gradient(135deg,var(--primary),var(--primary-deep));
-  box-shadow:0 6px 18px -6px var(--glow),inset 0 1px 0 rgba(255,255,255,.25);
   position:relative;transition:transform .3s cubic-bezier(.3,1.4,.4,1);
 }
 [data-theme="dark"] .brand-mark{color:var(--on-primary)}
 .brand:hover .brand-mark{transform:rotate(-6deg) scale(1.06)}
-.brand-mark::after{content:"";position:absolute;inset:-5px;border-radius:16px;border:1.5px solid var(--primary);opacity:0;animation:none}
+.brand-mark::after{content:"";position:absolute;border-radius:16px;border:1.5px solid var(--primary);opacity:0;animation:none}
 .brand:hover .brand-mark::after{animation:rxpulse 1.2s ease-out}
 @keyframes rxpulse{0%{opacity:.7;transform:scale(.85)}100%{opacity:0;transform:scale(1.18)}}
 .brand-text{display:flex;flex-direction:column;line-height:1.15}
@@ -187,7 +185,7 @@ img,svg{display:block}
   margin:0 0 18px;font-size:clamp(34px,5.4vw,58px);font-weight:800;line-height:1.18;letter-spacing:-.5px;
 }
 .hero h1 .grad{
-  background:linear-gradient(96deg,var(--primary) 5%,#14B8A6 45%,var(--accent) 95%);
+  background:linear-gradient(96deg,#1E3A8A 5%,var(--primary) 45%,#60A5FA 95%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
 .hero .lead{font-size:clamp(15.5px,1.6vw,18.5px);color:var(--text-2);max-width:560px;margin:0 0 30px}
@@ -213,7 +211,7 @@ img,svg{display:block}
 .rx-slip .rx-date{font-family:var(--mono);font-size:10.5px;color:var(--text-3);text-align:end}
 .rx-slip ul{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:9px}
 .rx-slip li{font-family:var(--mono);font-size:11.5px;color:var(--text-2);display:flex;gap:8px;align-items:baseline}
-.rx-slip li::before{content:"℞";color:var(--accent);font-size:12px}
+.rx-slip li::before{content:"𝕯𝖗𝕿𝖔𝖔𝖑𝖘";color:var(--accent);font-size:12px}
 .rx-slip .rx-sig{margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:12px;color:var(--text-3);display:flex;justify-content:space-between}
 .rx-slip .rx-sig i{font-family:var(--mono);font-style:normal;color:var(--primary);font-weight:700}
 @keyframes floaty{0%,100%{transform:rotate(3.5deg) translateY(0)}50%{transform:rotate(2.2deg) translateY(-12px)}}
@@ -453,7 +451,7 @@ input[type="range"]{accent-color:var(--primary);width:100%}
 @media(max-width:800px){.footer-inner{grid-template-columns:1fr;gap:28px}}
 .footer-brand{display:flex;gap:13px;align-items:flex-start}
 .footer-brand p{margin:6px 0 0;font-size:13.5px;color:var(--text-2);max-width:280px}
-.brand-mark.small{width:34px;height:34px;font-size:14px;border-radius:10px}
+.footer-brand .brand-mark{font-size:14px;border-radius:10px}
 .footer-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:24px}
 .footer-cols h4{margin:0 0 12px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3)}
 .footer-cols a{display:block;font-size:13.5px;color:var(--text-2);padding:4px 0;transition:color .2s}
