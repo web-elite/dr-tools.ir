@@ -95,9 +95,10 @@ fa: {
 
   "tool.open": "باز کردن ابزار",
   "tool.home": "خانه",
-  "tool.related": "ابزارهای هم‌دسته",
+  "tool.related": "ابزارهای مرتبط",
   "tool.empty": "ابزاری در این دسته پیدا نشد",
-
+  "tool.unicode-converter.name": "مبدل یونیکد و ایموجی",
+  "tool.unicode-converter.desc": "متن و ایموجی را به کدهای یونیکد، Escape Sequence جاوااسکریپت، CSS Content و HTML Entity تبدیل کنید",
   "c.copy": "کپی",
   "c.copied": "کپی شد ✓",
   "c.copyFail": "کپی ناموفق بود",
@@ -502,6 +503,14 @@ fa: {
   "hx.note": "متن را به Hex ببرید یا برعکس (رمزگذار UTF-8).",
   "hx.toHex": "متن به Hex",
   "hx.toText": "Hex به متن",
+
+  "uni.note": "متن و ایموجی را به کدهای یونیکد، Escape Sequence جاوااسکریپت، CSS Content و HTML Entity تبدیل کنید.",
+  "uni.ph": "Hello! 👋🌍",
+  "uni.js": "JavaScript / JSON",
+  "uni.css": "CSS Content",
+  "uni.dec": "HTML Entity Decimal",
+  "uni.hex": "HTML Entity Hex",
+  "uni.cp": "Code Points",
 
   "hm.note": "امضای HMAC پیام را با کلید مخفی و SHA تولید کنید.",
   "hm.msg": "پیام",
@@ -1220,6 +1229,14 @@ en: {
   "hx.note": "Convert text to Hex and back (UTF-8 encoding).",
   "hx.toHex": "Text to Hex",
   "hx.toText": "Hex to Text",
+
+  "uni.note": "Convert text and emojis to Unicode code points, JS escapes, CSS content, and HTML entities.",
+  "uni.ph": "Hello! 👋🌍",
+  "uni.js": "JavaScript / JSON",
+  "uni.css": "CSS Content",
+  "uni.dec": "HTML Entity Decimal",
+  "uni.hex": "HTML Entity Hex",
+  "uni.cp": "Code Points",
 
   "hm.note": "Generate an HMAC signature with a secret key and SHA.",
   "hm.msg": "Message",

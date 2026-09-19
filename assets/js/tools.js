@@ -1412,6 +1412,57 @@ define("hex-converter", "encoding", "link", ["hex", "text", "convert", "encode",
   root.append(out.node);
 });
 
+/* ---------- encoding: unicode converter ---------- */
+define("unicode-converter", "encoding", "digits", ["unicode", "emoji", "codepoint", "escape", "entity", "یونیکد", "ایموجی"], function (root, api) {
+  const t = api.t;
+  root.append(api.note("uni.note"));
+  const ta = api.textarea({ dir: "ltr", placeholder: t("uni.ph") });
+  ta.style.minHeight = "110px";
+  root.append(api.field("c.input", ta));
+
+  function rows() {
+    return [
+      ["uni.js", "JavaScript / JSON (\u005CuXXXX)", jsEsc],
+      ["uni.css", "CSS Content (\u005CXXXX)", cssEsc],
+      ["uni.dec", "HTML Entity Decimal (&#NNN;)", htmlDec],
+      ["uni.hex", "HTML Entity Hex (&#xHHH;)", htmlHex],
+      ["uni.cp", "Code Points (U+XXXX)", cpList],
+    ];
+  }
+  const boxes = {};
+  rows().forEach(function (r) {
+    const bar = api.outputBar(r[0]);
+    boxes[r[0]] = bar;
+    root.append(bar.node);
+  });
+
+  function esc(cp) {
+    if (cp <= 0xffff) return "\\u" + cp.toString(16).toUpperCase().padStart(4, "0");
+    return "\\u{" + cp.toString(16).toUpperCase() + "}";
+  }
+  function cps(s) {
+    const out = [];
+    for (const ch of String(s)) out.push(ch.codePointAt(0));
+    return out;
+  }
+  function jsEsc(s) { return cps(s).map(esc).join(""); }
+  function cssEsc(s) { return cps(s).map((cp) => "\\" + cp.toString(16).toUpperCase()).join(" "); }
+  function htmlDec(s) { return cps(s).map((cp) => "&#" + cp + ";").join(""); }
+  function htmlHex(s) { return cps(s).map((cp) => "&#x" + cp.toString(16).toUpperCase() + ";").join(""); }
+  function cpList(s) { return cps(s).map((cp) => "U+" + cp.toString(16).toUpperCase().padStart(4, "0")).join(", "); }
+
+  function tick() {
+    const s = ta.value || "";
+    if (!s) {
+      Object.values(boxes).forEach(function (b) { setOut(b.out, "", ""); });
+      return;
+    }
+    rows().forEach(function (r) { setOut(boxes[r[0]].out, r[2](s), "ok"); });
+  }
+  ta.addEventListener("input", tick);
+  tick();
+});
+
 /* ---------- hash: HMAC generator ---------- */
 define("hmac-generator", "hash", "key", ["hmac", "sha", "hash", "signature", "secret", "هش"], function (root, api) {
   const t = api.t;

@@ -66,6 +66,9 @@ function icon(name, cls) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="i ${cls || ""}">${ICONS[name] || ICONS.wrench}</svg>`;
 }
 
+/* ---------------- constants ---------------- */
+const ORIGIN = "https://dr-tools.ir";
+
 /* ---------------- state ---------------- */
 const LS_LANG = "drt-lang", LS_THEME = "drt-theme";
 const state = {
@@ -206,11 +209,12 @@ const CAT_REMAP = {
 };
 const TOOLS = (window.DRT_TOOLS || []).map((x) => { x.cat = CAT_REMAP[x.id] || x.cat; return x; });
 const toolById = (id) => TOOLS.find((x) => x.id === id);
-/* link builders */
+/* link builders (clean paths for SEO) */
 const LH = {
   home: "/",
   cat: (id) => "/cat/" + id,
   tool: (id) => "/tools/" + id,
+  toolOrCat: (name, param) => name === "tool" ? LH.tool(param) : name === "cat" ? LH.cat(param) : LH.home,
 };
 
 /* ---------------- chrome (header / footer) ---------------- */
@@ -275,7 +279,7 @@ function renderHome() {
       </div>
       <aside class="hero-rx" aria-hidden="true">
         <div class="rx-slip">
-          <div class="rx-top"><span class="rx-r">℞</span><span class="rx-date">${t("rx.title")}<br>${t("rx.date")}</span></div>
+          <div class="rx-top"><span class="rx-r">𝕯𝖗𝕿𝖔𝖔𝖑𝖘</span><span class="rx-date">${t("rx.title")}<br>${t("rx.date")}</span></div>
           <ul><li>${t("rx.l1")}</li><li>${t("rx.l2")}</li><li>${t("rx.l3")}</li></ul>
           <div class="rx-sig"><span>${t("rx.sig")}</span><i>${t("rx.sigby")}</i></div>
         </div>
