@@ -161,11 +161,72 @@ const AI_API = "api/ai.php";
 const _aiSession = new Map();
 function _aiCacheKey(toolId, prompt) { return toolId + "::" + prompt; }
 
+/* Client-side security gate: detect abuse before the request leaves the browser.
+   Returns true when the prompt should be blocked locally (no API call). */
+function _aiBlocked(prompt) {
+  const p = (prompt || "").trim();
+  if (!p) return true;
+  if (p.length > 500) return true; // token-burn / overly long prompts
+
+  const lc = p.toLowerCase();
+
+  // — Token-burn patterns (force the model to produce long content) —
+  if (/\b(from\s+\d+\s+to\s+\d+)/i.test(p)) return true;
+  if (/\b(count\s*(to|up\s*to|from)\s*\d+)/i.test(p)) return true;
+  if (/\b(\d{3,})\s*(mac|ip|email|url|token|user|pass|address)/i.test(p)) return true;
+  if (/\b(bulk|batch)\s*(generate|create|list|make)/i.test(p)) return true;
+  if (/\b(generate|create|make|list|produce)\s+\d{3,}/i.test(p)) return true;
+
+  // — Persian token-burn patterns —
+  if (/(بشمار|شمار|تعداد|لیست(؟|ِ)?\s*(\d+|ده|صد|هزار))/i.test(p) && p.length > 10) return true;
+  if (/(مک\s*(آدرس|ایپ|ایمیل|کاربر)|\d{3,}\s*(مک|ایمیل|کلمه|رمز|توکن|آدرس))/i.test(p)) return true;
+  if (/(از\s*\d+\s*تا\s*\d+|از\s*یک\s*تا\s*هزار|از\s*۱\s*تا\s*۱۰۰۰)/i.test(p)) return true;
+
+  // — Scope-escape / role-play / jailbreak patterns —
+  if (/\b(ignore|disregard|forget)\s+(all\s+)?(previous|prior|above|your)\s+(instructions|rules|prompts|context|constraints)/i.test(p)) return true;
+  if (/\byou\s+are\s+(no\s+longer|not|a|an)\s+(ai|assistant|agent|bot|regex|tool|model)/i.test(p)) return true;
+  if (/\bact\s+as\s+(a|an)\s+/i.test(p)) return true;
+  if (/\bpretend\s+(you|that\s+you)/i.test(p)) return true;
+  if (/\brole.?play/i.test(p)) return true;
+  if (/\bjailbreak/i.test(p)) return true;
+  if (/\bDAN\s*mode/i.test(p)) return true;
+  if (/\b(sudo|god|developer)\s*mode/i.test(p)) return true;
+
+  // — Information-extraction / secret-leak patterns —
+  if (/\b(system|hidden|internal|secret|developer)\s+(prompt|instruction|rule|directive|key|token)/i.test(p)) return true;
+  if (/\b(reveal|show|print|leak|dump|output|repeat)\s+(your|the|all|any|my)\s*(system|hidden|internal|secret|original)?\s*(prompt|instruction|rule|key|token|secret)/i.test(p)) return true;
+  if (/\bwhat\s+(are|is)\s+(your|the)\s*(system|hidden|internal|secret)\s*(prompt|instruction|rule|key|token)/i.test(p)) return true;
+  if (/\b(list|show|print|output)\s+(all|everything|every)\s+(you\s+know|you\s+have|you\s+can)/i.test(p)) return true;
+
+  // — Out-of-scope tasks (regex-generator is a regex tool, not a general AI) —
+  if (/\bwrite\s+(a|an|the)?\s*(poem|story|essay|blog|article|slogan|haiku|limerick|song|jingle|rap|verse|letter|email|message|code|function|class|script|program|app|website|page|api|database|sql|query|python|java|c\s*\+|c\s*#|rust|go|ruby|php|node|javascript|typescript)\b/i.test(p)) return true;
+  if (/\btranslate\s+(this|the\s+following|the\s+text|the\s+sentence|the\s+word|to\s+\w+)/i.test(p)) return true;
+  if (/\bexplain\s+(quantum|physics|math|history|philosophy|economics|psychology|medicine|biology|chemistry|astronomy|geology|thermodynamics)/i.test(p)) return true;
+  if (/\b(what|who|when|where|why)\s+(is|was|are|were|do|does|did)\s+(the|a|an|this|that|my|our)\s+(atom|photon|black\s+hole|einstein|gravity|dna|protein|neuron|cell|organ|brain|heart|liver|kidney|country|capital|continent|planet|element|law|theorem|formula|definition|meaning)/i.test(p)) return true;
+  if (/\blist\s+(all|every|the)\s+(countries|languages|elements|planets|amino|viruses|bacteria|continents|oceans|rivers|mountains)/i.test(p)) return true;
+  if (/\b(solve|calculate|compute|find|determine)\s+(this|the\s+following|a|the|all|every)\s+(math|logic|physics|chem|calculus|algebra|integral|derivative|equation)/i.test(p)) return true;
+  if (/\b(how\s+to|show\s+me|write)\s+(a|an|the)?\s*(make|build|create|write|hack|exploit|bypass|crack|break|generate)\s+(a|an|the)?\s*(script|program|code|function|class|bot|tool|app|website|page|api|database|sql|query|python|java|rust|go|ruby|php|node|javascript|typescript)/i.test(p)) return true;
+  if (/\b(how\s+do\s*I|how\s+to|show\s+me)\s+(make|build|hack|exploit|bypass|crack|break|steal|leak)\b/i.test(p)) return true;
+
+  // — Generic knowledge / open-ended questions that burn tokens —
+  if (/\b(what|who|when|where|why|how)\s+(is|was|are|were|do|does|did|many|much|long|often)\b.*\b(happen|work|work(s|ing)?|function|process|theory|concept|principle|law|theorem|formula|definition|meaning|difference|difference)/i.test(p) && p.length > 40) return true;
+
+  return false;
+}
+
 /* Returns { text, fromCache, memKey } — always goes through PHP; throws on failure */
 API.ai = async function (prompt, opts) {
   opts = opts || {};
   const toolId = opts.tool || "";
   const ck = _aiCacheKey(toolId, prompt);
+
+  // 0) Client-side security gate: block obvious abuse before it hits the server
+  if (_aiBlocked(prompt)) {
+    const msg = t("ai.blocked");
+    const err = new Error(msg);
+    err.blocked = true;
+    throw err;
+  }
 
   // 1) Session cache (same prompt already answered this page visit)
   if (opts.useMemory !== false && _aiSession.has(ck)) {
@@ -180,7 +241,11 @@ API.ai = async function (prompt, opts) {
     body: JSON.stringify({ action: "ai", tool: toolId, prompt }),
   });
   const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "AI_ERROR");
+  if (!data.ok) {
+    const err = new Error(data.error || "AI_ERROR");
+    if (data.blocked) err.blocked = true; // server rejected as abuse
+    throw err;
+  }
 
   _aiSession.set(ck, data.text);
   return { text: data.text, fromCache: !!data.fromCache, memKey: data.memKey };

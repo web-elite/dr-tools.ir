@@ -420,23 +420,32 @@ define("regex-generator", "ai", "asterisk", ["ai", "regex", "codegen", "explain"
   async function gen() {
     const raw = descI.value.trim();
     if (!raw) { setOut(out.out, "", "err"); return; }
+    if (raw.length > 500) { setOut(out.out, t("ai.blocked"), "err"); return; }
     const q = raw.toLowerCase();
     const prompt = "Write a single JavaScript-compatible regex for: " + raw + ". Return ONLY the regex, no explanation, no backticks.";
+
+    // Show loading state immediately
+    reactHost.innerHTML = "";
+    out.out.classList.remove("from-cache", "ok", "err");
+    setOut(out.out, t("ai.loading"), "");
 
     try {
       const res = await api.ai(prompt, { tool: "regex-generator" });
       const text = res.text.trim().replace(/^```.*$/gm, "").replace(/^`\+?`.+$/gm, "").trim();
-      // If AI returned a bare regex, show it; otherwise show the raw text
       const display = text.replace(/\n\s*\/\/ AI: remembered ✓/g, "");
       setOut(out.out, display + (res.fromCache ? "\n\n// remembered ✓" : ""), res.fromCache ? "ok" : "");
-      reactHost.innerHTML = "";
       reactHost.append(api.react(out.out, "regex-generator", prompt, res.memKey));
       out.out.classList.toggle("from-cache", !!res.fromCache);
     } catch (e) {
+      if (e.blocked) {
+        // Security block: show the friendly refusal message, no fallback
+        setOut(out.out, t("ai.blocked"), "err");
+        out.out.classList.remove("from-cache");
+        return;
+      }
       // Fallback: use local pattern library
       const list = localMatch(q);
       setOut(out.out, list.map((r) => "// " + r.d + "\n" + r.p + "\n").join("\n"), "ok");
-      reactHost.innerHTML = "";
       out.out.classList.remove("from-cache");
     }
   }

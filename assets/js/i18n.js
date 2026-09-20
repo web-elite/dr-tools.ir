@@ -742,8 +742,10 @@ fa: {
   "fr.btn": "جستجو و جایگزینی",
   "fr.done": "جایگزینی انجام شد",
 
-  "ai.remembered": "یادگیری شد ✓",
-  "ai.notHelpful": "به‌روز رسانی مجدد در دفعه بعد",
+  "ai.remembered": "ممنون! 🙏 یادداشت کردیم که این پاسخ مفید بود.",
+  "ai.notHelpful": "ممنون که گفتی. دفعه بعد بیشتر تلاش می‌کنیم 💪",
+  "ai.loading": "امممم 🤔…",
+  "ai.blocked": "این درخواست خارج از محدوده‌ی این ابزاره. 🚫",
 
   "rgx.note": "توضیح ساده بنویسید؛ یک عبارت منظم آماده‌ی قابل استفاده برایتان ساخته می‌شود. اگر هوش مصنوعی فعال باشد از آن استفاده می‌کند، در غیر این‌صورت از کتابخانه محلی.",
   "rgx.desc": "توضیح ساده",
@@ -1521,8 +1523,10 @@ en: {
   "fr.btn": "Find & replace",
   "fr.done": "Replacements made",
 
-  "ai.remembered": "Remembered ✓",
-  "ai.notHelpful": "Will re-ask next time",
+  "ai.remembered": "Thanks! 🙏 We'll remember that this answer was helpful.",
+  "ai.notHelpful": "Thanks for the feedback. We'll try again next time 💪",
+  "ai.loading": "Generating answer…",
+  "ai.blocked": "This request is outside the scope of this tool. Please describe a regex pattern only. 🚫",
 
   "rgx.note": "Describe a pattern in plain words. Uses AI when enabled, otherwise falls back to the local pattern library.",
   "rgx.desc": "Plain description",

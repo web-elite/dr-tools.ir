@@ -19,9 +19,9 @@
  */
 
 // ─── CONFIG: change these before deploying ──────────────────────────────────
-define('AI_BASE_URL', 'https://www.completions.me/api/v1');
-define('AI_API_KEY',  'sk-cp_6676587eaa35495c7749c59ba83c9af507ec8558db5ddfc5');
-define('AI_MODEL',    'gemini-3.1-pro-preview');
+define('AI_BASE_URL', 'https://api.atria-asi.ai/v1');
+define('AI_API_KEY',  'atr_UaJZcazOm16KWIVVjPnpHFpBX-yzw6Ev');
+define('AI_MODEL',    'Atria-Dawn-Preview');
 // ─────────────────────────────────────────────────────────────────────────────
 
 header('Content-Type: application/json; charset=utf-8');
@@ -85,12 +85,95 @@ function saveMem(string $file, array $mem): void {
     rename($tmp, $file);
 }
 
+/* ---------------------------------------------------------------------------
+   Security: prompt validation
+   - Max length 500 chars (token-burn prevention)
+   - Tool-specific scope restriction (regex-generator only accepts regex descriptions)
+   - Blocklist of common abuse patterns
+   --------------------------------------------------------------------------- */
+function validatePrompt(string $tool, string $prompt): ?string {
+    $p = trim($prompt);
+    // 1. Length cap — anything >500 chars is almost certainly abuse
+    if (mb_strlen($p) > 500) return 'prompt_too_long';
+
+    // 2. Tool scope: regex-generator prompts must be short pattern descriptions
+    if ($tool === 'regex-generator') {
+        // Block prompts that try to make the model do something else entirely
+        $abusePatterns = [
+            '/from\s+\d+\s+to\s+\d+/i',          // "from 1 to 1000"
+            '/count(ing)?\s+(to|up\s+to)\s+\d+/i', // "count to 1000"
+            '/(generate|create|make|list)\s+\d{2,}\s+(mac|ip|email|url|token|user|pass)/i',
+            '/(mac|ip)\s+address(\s+list)?\s*(of|with)?\s*\d{2,}/i',
+            '/print|echo|output\s+(all|everything|the\s+whole)/i',
+            '/(system|developer|hidden)\s+(prompt|instruction|rule)/i',
+            '/(reveal|show|tell|leak|dump)\s+(your|the|all\s+)?.{0,30}(prompt|instruction|rule|secret|key|token)/i',
+            '/ignore\s+(all\s+)?(previous|prior|above)\s+(instructions|rules|prompts|context)/i',
+            '/you\s+are\s+now\s+(a|an)\s+(different|new|other)/i',
+            '/act\s+as\s+(a|an)\s+(ai|assistant|agent|bot|character|human)/i',
+            '/pretend\s+(you|that\s+you)\s+are/i',
+            '/role\s*play/i',
+            '/jailbreak/i',
+            '/DAN\s+mode/i',
+            '/write\s+(a|an)?\s*(poem|story|essay|blog|article|slogan|haiku)/i',
+            '/translate\s+(this|the\s+following|into)/i',
+            '/(python|java|c\+\+|c#|rust|go|ruby|php|node|javascript)\s+(script|program|code|function|class)/i',
+            '/solve\s+(this|the\s+following|a)\s+(math|logic|physics|chem)/i',
+            '/(what|who|when|where|why)\s+(is|was|are|were)\s+(not|the|a|an)/i',  // general knowledge Qs
+            '/(explanation|explain|define|describe)\s+(what|how|why|the)\s+/i',
+            '/(history|definition|meaning)\s+of\s+/i',
+            '/list\s+(all|every|the)\s+(countries|languages|elements|planets|amino|viruses|bacteria)/i',
+            '/(write|generate|create)\s+(a|an)\s*(song|music|video|image|picture)/i',
+            '/(how\s+to|what\s+is\s+the)\s+(make|build|hack|exploit|bypass|crack)/i',
+            '/(password|passwd|secret|api[_\s-]?key|token|credential)\s+(for|of|from)\s+/i',
+        ];
+        foreach ($abusePatterns as $pat) {
+            if (preg_match($pat, $p)) return 'out_of_scope';
+        }
+    }
+
+    // 3. Global blocklist (any tool)
+    $globalAbuse = [
+        '/(ignore|disregard|forget)\s+(all\s+)?(previous|prior|above|your)\s+(instructions|rules|prompts|context|constraints)/i',
+        '/you\s+are\s+(no\s+longer|not)\s+a\s+regex/i',
+        '/(system|hidden|internal)\s+(prompt|instruction|rule|directive)/i',
+        '/(reveal|show|print|leak|dump)\s+(your|the|all|any)\s*(system|internal|hidden|secret)\s*(prompt|instruction|rule|key|token|secret)/i',
+        '/what\s+(are|is)\s+your\s+(system|hidden|internal)\s*(prompt|instruction|rule)/i',
+        '/repeat\s+(your|the)\s*(system|hidden|internal)\s*(prompt|instruction|rule)/i',
+        '/from\s+\d+\s+to\s+\d+/i',
+        '/count\s+(to|from|from\s+\d+\s+to\s+\d+)/i',
+        '/(generate|create|make|list|produce)\s+(\d{3,}|one\s+hundred|thousand|million)\s+(mac|ip|email|url|token|user|pass)/i',
+        '/(write|create|generate)\s+(a\s+)?(poem|story|essay|blog|article|slogan|haiku|limerick|song|jingle|rap|verse)/i',
+        '/translate\s+(this|the\s+following|the\s+text|the\s+sentence|the\s+word)/i',
+        '/(python|java|c\+\+|c#|rust|go|ruby|php|node|typescript|javascript)\s+(script|program|code|function|class|method)/i',
+        '/solve\s+(this|the\s+following|a|the)\s+(math|logic|physics|chem|calculus|algebra)/i',
+        '/(how\s+do\s+I|how\s+to|show\s+me)\s+(make|build|hack|exploit|bypass|crack|break)/i',
+        '/(jailbreak|DAN\s+mode|developer\s+mode|sudo\s+mode|god\s+mode)/i',
+    ];
+    foreach ($globalAbuse as $pat) {
+        if (preg_match($pat, $p)) return 'out_of_scope';
+    }
+
+    return null; // valid
+}
+
+function securityError(string $code): void {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => $code, 'blocked' => true]);
+    exit;
+}
+
 switch ($action) {
 
     case 'ai':
         if (AI_API_KEY === '') {
             echo json_encode(['ok' => false, 'error' => 'NO_KEY']);
             exit;
+        }
+
+        // Security: validate prompt before any processing
+        $blockReason = validatePrompt($tool, $prompt);
+        if ($blockReason !== null) {
+            securityError($blockReason);
         }
 
         // 1) Check memory first
