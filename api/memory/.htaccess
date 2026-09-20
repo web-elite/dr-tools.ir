@@ -1,0 +1,4 @@
+# Prevent direct web access to memory files
+<FilesMatch "\.json$">
+    Require all denied
+</FilesMatch>
