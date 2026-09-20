@@ -153,6 +153,75 @@ API.btn = function (labelKey, cls, onclick, iconNm) {
   return b;
 };
 
+/* ---------------- AI layer — server-side proxy (api/ai.php) ---------------- */
+/* All AI calls go through the PHP backend; API key is never exposed to the browser. */
+const AI_API = "api/ai.php";
+
+/* Per-session in-memory cache so identical prompts on the same page don't re-fetch */
+const _aiSession = new Map();
+function _aiCacheKey(toolId, prompt) { return toolId + "::" + prompt; }
+
+/* Returns { text, fromCache, memKey } — always goes through PHP; throws on failure */
+API.ai = async function (prompt, opts) {
+  opts = opts || {};
+  const toolId = opts.tool || "";
+  const ck = _aiCacheKey(toolId, prompt);
+
+  // 1) Session cache (same prompt already answered this page visit)
+  if (opts.useMemory !== false && _aiSession.has(ck)) {
+    const hit = _aiSession.get(ck);
+    return { text: hit, fromCache: true };
+  }
+
+  // 2) Call PHP endpoint (it checks its own file memory, then the live API)
+  const res = await fetch(AI_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "ai", tool: toolId, prompt }),
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "AI_ERROR");
+
+  _aiSession.set(ck, data.text);
+  return { text: data.text, fromCache: !!data.fromCache, memKey: data.memKey };
+};
+
+/* Render 👍/👎 reaction bar; 👍 POSTs to PHP so the answer persists server-side */
+API.react = function (outEl, toolId, prompt, _memKey) {
+  const bar = el("div", { class: "react-bar" });
+  const upBtn = el("button", { class: "react-btn", type: "button", title: "helpful", html: "👍" });
+  const downBtn = el("button", { class: "react-btn", type: "button", title: "not helpful", html: "👎" });
+  const status = el("span", { class: "react-status", text: "" });
+  bar.append(upBtn, downBtn, status);
+
+  upBtn.addEventListener("click", async () => {
+    upBtn.classList.add("active"); downBtn.classList.remove("active");
+    status.textContent = t("ai.remembered");
+    const text = outEl.textContent || outEl.innerText || "";
+    try {
+      await fetch(AI_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "remember", tool: toolId, prompt, text }),
+      });
+    } catch (_) { /* offline / endpoint missing — session cache still holds it */ }
+    setTimeout(() => { status.textContent = ""; }, 2500);
+  });
+  downBtn.addEventListener("click", async () => {
+    upBtn.classList.remove("active"); downBtn.classList.add("active");
+    status.textContent = t("ai.notHelpful");
+    try {
+      await fetch(AI_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "forget", tool: toolId, prompt }),
+      });
+    } catch (_) { /* ignore */ }
+    setTimeout(() => { status.textContent = ""; }, 2500);
+  });
+  return bar;
+};
+
 /* ---------------- categories: groups → leaf cats ---------------- */
 const GROUPS = [
   { id: "developer", icon: "code" },
@@ -483,6 +552,7 @@ document.addEventListener("DOMContentLoaded", () => {
   applyTheme();
   $("#themeBtn").addEventListener("click", () => setTheme(state.theme === "light" ? "dark" : "light"));
   $("#langBtn").addEventListener("click", () => setLang(state.lang === "fa" ? "en" : "fa"));
+
   $("#searchOpen").addEventListener("click", openPalette);
   $("#paletteBackdrop").addEventListener("mousedown", (e) => { if (e.target === e.currentTarget) closePalette(); });
   $("#paletteInput").addEventListener("input", (e) => fillPalette(e.target.value));

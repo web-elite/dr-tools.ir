@@ -372,6 +372,407 @@ define("token-estimator", "ai", "activity", ["ai", "token", "word", "count", "ت
   tick();
 });
 
+/* ---------- ai: regex-generator ---------- */
+define("regex-generator", "ai", "asterisk", ["ai", "regex", "codegen", "explain", "کد", "ریجکس"], function (root, api) {
+  const t = api.t;
+  root.append(api.note("rgx.note"));
+  const descI = api.input({ placeholder: t("rgx.descPh") });
+  const out = api.outputBar("c.result");
+  const reactHost = api.el("div", {});
+  root.append(api.field("rgx.desc", descI));
+  root.append(api.btn("c.generate", "btn-primary", gen, "zap"));
+  root.append(out.node, reactHost);
+
+  const LIB = [
+    { p: "^\\d{10}$", d: "10-digit phone (09xxxxxxxxx)" },
+    { p: "^09\\d{9}$", d: "Iranian mobile (09xxxxxxxxx)" },
+    { p: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", d: "email address" },
+    { p: "^(http|https):\\/\\/[\\w\\.-]+(\\/\\S*)?$", d: "full URL with protocol" },
+    { p: "^#?[0-9a-fA-F]{6}$", d: "6-digit hex color" },
+    { p: "^\\d{4}-\\d{2}-\\d{2}$", d: "date YYYY-MM-DD" },
+    { p: "^\\d{2}[/\\-]\\d{2}[/\\-]\\d{4}$", d: "date DD/MM/YYYY" },
+    { p: "^[a-zA-Z0-9_]+$", d: "alphanumeric + underscore (slug)" },
+    { p: "^\\d{1,3}(\\.\\d{1,3}){3}$", d: "IPv4 address" },
+    { p: "^[A-Za-z0-9]{8,32}$", d: "username (8-32 chars)" },
+    { p: "^\\+?\\d{7,15}$", d: "phone number (E.164 style)" },
+    { p: "^(card|gift)-[a-z0-9]{4,}$", d: "coupon code card-xxxx" },
+    { p: "^\\w{3,}(-\\w{2,})*\\w?$", d: "kebab-case token" },
+    { p: "^\\d{1,3}$", d: "number 0-999" },
+    { p: "^\\d+(\\.\\d{1,2})?$", d: "decimal number, 2 digits max" },
+    { p: "^(?:12|11|10|9|8|7|6|5|4|3|2|1|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31)\\s?(فروار|فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر|آبان|آذر|دی|بهمن|اسفند)$", d: "Jalali date (Iranian)" },
+    { p: "^\\d{4}$", d: "4-digit year" },
+    { p: "^\\d{1,2}[:\\.]\\d{2}$", d: "time HH:MM" },
+    { p: "^\\d{2,12}-?\\d{4,10}$", d: "order number pattern" },
+    { p: "^[A-Z]{2}\\d{10}[A-Z0-9]{3}$", d: "SWIFT / IBAN-style code" },
+  ];
+
+  function localMatch(q) {
+    if (q.includes("email") || q.includes("ایمیل")) return LIB.filter((r) => r.d.includes("email"));
+    if (q.includes("url") || q.includes("لینک") || q.includes("link")) return LIB.filter((r) => r.d.includes("URL"));
+    if (q.includes("color") || q.includes("رنگ") || q.includes("hex")) return LIB.filter((r) => r.d.includes("hex"));
+    if (q.includes("date") || q.includes("تاریخ")) return LIB.filter((r) => r.d.includes("date"));
+    if (q.includes("phone") || q.includes("موبایل") || q.includes("۹") || q.includes("mobile")) return LIB.filter((r) => r.d.includes("phone") || r.d.includes("mobile"));
+    if (q.includes("ip")) return LIB.filter((r) => r.d.includes("IPv4"));
+    if (q.includes("username") || q.includes("نام کاربری")) return LIB.filter((r) => r.d.includes("username"));
+    return LIB.slice(0, 6);
+  }
+
+  async function gen() {
+    const raw = descI.value.trim();
+    if (!raw) { setOut(out.out, "", "err"); return; }
+    const q = raw.toLowerCase();
+    const prompt = "Write a single JavaScript-compatible regex for: " + raw + ". Return ONLY the regex, no explanation, no backticks.";
+
+    try {
+      const res = await api.ai(prompt, { tool: "regex-generator" });
+      const text = res.text.trim().replace(/^```.*$/gm, "").replace(/^`\+?`.+$/gm, "").trim();
+      // If AI returned a bare regex, show it; otherwise show the raw text
+      const display = text.replace(/\n\s*\/\/ AI: remembered ✓/g, "");
+      setOut(out.out, display + (res.fromCache ? "\n\n// remembered ✓" : ""), res.fromCache ? "ok" : "");
+      reactHost.innerHTML = "";
+      reactHost.append(api.react(out.out, "regex-generator", prompt, res.memKey));
+      out.out.classList.toggle("from-cache", !!res.fromCache);
+    } catch (e) {
+      // Fallback: use local pattern library
+      const list = localMatch(q);
+      setOut(out.out, list.map((r) => "// " + r.d + "\n" + r.p + "\n").join("\n"), "ok");
+      reactHost.innerHTML = "";
+      out.out.classList.remove("from-cache");
+    }
+  }
+});
+
+/* ---------- ai: json-to-sql ---------- */
+define("json-to-sql", "ai", "table", ["ai", "sql", "insert", "json", "convert", "اس کیو ال"], function (root, api) {
+  const t = api.t;
+  root.append(api.note("jsq.note"));
+  const nameI = api.input({ placeholder: "users" });
+  const ta = api.textarea({ dir: "ltr", placeholder: '[ { "name": "Ali", "age": 30 } ]' });
+  ta.style.minHeight = "150px";
+  const incC = api.check("jsq.inc", false);
+  const out = api.outputBar("c.output");
+  root.append(api.field("jsq.table", nameI));
+  root.append(api.field("c.input", ta));
+  root.append(incC.node);
+  root.append(api.btn("jsq.btn", "btn-primary", build, "table"));
+  root.append(out.node);
+  function q(v) {
+    if (v === null || v === undefined) return "NULL";
+    if (typeof v === "boolean") return v ? "TRUE" : "FALSE";
+    if (typeof v === "number") return String(v);
+    if (isObj(v) || Array.isArray(v)) return "'" + JSON.stringify(v).replace(/'/g, "''") + "'";
+    return "'" + String(v).replace(/'/g, "''") + "'";
+  }
+  function build() {
+    const table = nameI.value.trim() || "table";
+    let data;
+    try { data = JSON.parse(ta.value.trim() || "[]"); } catch (e) { api.toast(t("c.invalidInput"), "x"); return; }
+    if (!Array.isArray(data) || !data.length) { api.toast(t("c.emptyErr"), "x"); return; }
+    const rows = data.map((r) => Object.entries(r));
+    const cols = [];
+    rows.forEach((r) => r.forEach(([k]) => { if (!cols.includes(k)) cols.push(k); }));
+    let sql = "INSERT INTO " + table + " (" + cols.join(", ") + ")\nVALUES\n";
+    sql += rows.map((r) => {
+      const m = Object.fromEntries(r);
+      return "  (" + cols.map((c) => q(m[c])).join(", ") + "),";
+    }).join("\n");
+    sql = sql.replace(/,$/, "") + ";\n";
+    if (incC.input.checked) {
+      sql += "\n\n-- incremental: append per row\n" + data.map((r) => "INSERT INTO " + table + " (" + Object.keys(r).join(", ") + ") VALUES (" + Object.values(r).map(q).join(", ") + ");").join("\n");
+    }
+    setOut(out.out, sql, "ok");
+  }
+});
+
+/* ---------- ai: yaml-to-json ---------- */
+define("yaml-to-json", "ai", "braces", ["ai", "yaml", "json", "convert", "یمل"], function (root, api) {
+  const t = api.t;
+  root.append(api.note("yj.note"));
+  const ta = api.textarea({ dir: "ltr", placeholder: "name: Ali\nage: 30\ntags:\n  - a\n  - b" });
+  ta.style.minHeight = "150px";
+  const out = api.outputBar("c.output");
+  root.append(api.field("c.input", ta));
+  root.append(api.btn("yj.btn", "btn-primary", convert, "braces"));
+  root.append(out.node);
+  function parseScalar(v) {
+    v = v.trim();
+    if (v === "") return "";
+    if (v === "null" || v === "~") return null;
+    if (v === "true") return true;
+    if (v === "false") return false;
+    if (/^-?\d+$/.test(v)) return parseInt(v, 10);
+    if (/^-?\d*\.\d+$/.test(v)) return parseFloat(v);
+    if ((v[0] === "[" && v[v.length - 1] === "]") || (v[0] === "{" && v[v.length - 1] === "}") || (v[0] === '"' && v.endsWith('"')) || (v[0] === "'" && v.endsWith("'"))) {
+      try { return JSON.parse(v.replace(/'/g, '"')); } catch (e) {}
+    }
+    if (v[0] === '"' || v[0] === "'") return v.slice(1, -1);
+    return v;
+  }
+  function parseLine(line) {
+    const m = line.match(/^(\s*)(- )?([\w.@-]+):(.*)$/);
+    if (!m) return null;
+    return { indent: m[1].length, dash: !!m[2], key: m[3], rest: m[4] };
+  }
+  function convert() {
+    const lines = (ta.value || "").split(/\r?\n/).filter((l) => l.trim() && !l.trim().startsWith("#"));
+    let i = 0;
+    function parseBlock(indent) {
+      const arr = [];
+      let obj = {};
+      let isArr = false;
+      while (i < lines.length) {
+        const raw = lines[i];
+        const curIndent = raw.length - raw.trimStart().length;
+        if (curIndent < indent) break;
+        const l = parseLine(raw);
+        if (!l) { i++; continue; }
+        if (l.indent > indent && !l.dash && !obj.__pending) { i++; continue; }
+        if (l.dash) {
+          isArr = true;
+          if (l.rest.trim()) {
+            const sub = parseScalar(l.rest.trim());
+            arr.push(sub);
+            i++;
+          } else {
+            i++;
+            const nested = parseBlock(indent + 2);
+            arr.push(nested);
+          }
+        } else {
+          isArr = false;
+          const val = l.rest.trim();
+          if (val === "") {
+            i++;
+            if (i < lines.length) {
+              const nextIndent = lines[i].length - lines[i].trimStart().length;
+              obj[l.key] = nextIndent > indent ? parseBlock(nextIndent) : null;
+            } else obj[l.key] = null;
+          } else {
+            obj[l.key] = parseScalar(val);
+            i++;
+          }
+        }
+      }
+      return isArr ? arr : obj;
+    }
+    try {
+      const v = parseBlock(0);
+      setOut(out.out, JSON.stringify(v, null, 2), "ok");
+    } catch (e) { setOut(out.out, t("c.error") + ": " + e.message, "err"); }
+  }
+});
+
+/* ---------- ai: csv-to-json ---------- */
+define("csv-to-json", "ai", "table", ["ai", "csv", "json", "convert", "سریال"], function (root, api) {
+  const t = api.t;
+  root.append(api.note("ccj.note"));
+  const ta = api.textarea({ dir: "ltr", placeholder: "name,age\nAli,30" });
+  ta.style.minHeight = "150px";
+  const out = api.outputBar("c.output");
+  root.append(api.field("c.input", ta));
+  root.append(api.btn("ccj.btn", "btn-primary", convert, "table"));
+  root.append(out.node);
+  function parseCsv(txt) {
+    const rows = [];
+    let row = [], cur = "", inQ = false;
+    for (let i = 0; i < txt.length; i++) {
+      const c = txt[i];
+      if (inQ) {
+        if (c === '"' && txt[i + 1] === '"') { cur += '"'; i++; }
+        else if (c === '"') inQ = false;
+        else cur += c;
+      } else if (c === '"') inQ = true;
+      else if (c === ",") { row.push(cur); cur = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && txt[i + 1] === "\n") i++; row.push(cur); cur = ""; rows.push(row); row = []; }
+      else cur += c;
+    }
+    row.push(cur);
+    if (row.some((x) => x !== "")) rows.push(row);
+    return rows;
+  }
+  function convert() {
+    const raw = ta.value.trim();
+    if (!raw) { api.toast(t("c.emptyErr"), "x"); return; }
+    const rows = parseCsv(raw);
+    const head = rows[0];
+    const data = rows.slice(1).map((r) => Object.fromEntries(head.map((h, j) => [h, r[j] || ""])));
+    setOut(out.out, JSON.stringify(data, null, 2), "ok");
+  }
+});
+
+/* ---------- ai: json-schema ---------- */
+define("json-schema", "ai", "code", ["ai", "json", "schema", "infer", "اسکیما"], function (root, api) {
+  const t = api.t;
+  root.append(api.note("sc.note"));
+  const ta = api.textarea({ dir: "ltr", placeholder: '{ "name": "Ali", "age": 30, "admin": false, "tags": ["a"] }' });
+  ta.style.minHeight = "150px";
+  const out = api.outputBar("c.output");
+  root.append(api.field("c.input", ta));
+  root.append(api.btn("sc.btn", "btn-primary", infer, "code"));
+  root.append(out.node);
+  function typeOf(v) {
+    if (v === null) return "null";
+    if (typeof v === "number") return Number.isInteger(v) ? "integer" : "number";
+    if (Array.isArray(v)) return "array";
+    if (typeof v === "object") return "object";
+    return typeof v;
+  }
+  function inferNode(v) {
+    const s = { type: typeOf(v) };
+    if (s.type === "integer" || s.type === "number") { s.minimum = v; s.maximum = v; }
+    if (s.type === "string" && v !== "") { s.pattern = "^.+$"; }
+    if (s.type === "array" && v.length) {
+      s.items = inferNode(v[0]);
+    }
+    if (s.type === "object") {
+      s.properties = {};
+      Object.entries(v).forEach(([k, val]) => { s.properties[k] = inferNode(val); });
+      s.required = Object.keys(v);
+      s.additionalProperties = false;
+    }
+    return s;
+  }
+  function infer() {
+    let v;
+    try { v = JSON.parse(ta.value.trim()); } catch (e) { api.toast(t("c.invalidInput"), "x"); return; }
+    const s = inferNode(v);
+    s["$schema"] = "http://json-schema.org/draft-07/schema#";
+    s.title = "Auto-generated schema";
+    setOut(out.out, JSON.stringify(s, null, 2), "ok");
+  }
+});
+
+/* ---------- ai: prompt-templates ---------- */
+define("prompt-templates", "ai", "tag", ["ai", "prompt", "template", "library", "پرامپت", "قالب"], function (root, api) {
+  const t = api.t;
+  root.append(api.note("pt.note"));
+  const catS = api.select([
+    ["writing", t("pt.writing")], ["coding", t("pt.coding")], ["marketing", t("pt.marketing")],
+    ["learning", t("pt.learning")], ["translation", t("pt.translation")],
+  ]);
+  const out = api.outputBar("c.result");
+  root.append(api.field("pt.category", catS));
+  root.append(api.btn("c.generate", "btn-primary", gen, "zap"));
+  root.append(out.node);
+  const T = {
+    writing: [
+      "Write a compelling [topic] blog post, 800 words, SEO-friendly, with a hook in the first paragraph.\nTone: [casual | professional]\nCTA: [what to ask the reader to do]",
+      "Summarize the following text into 3 bullet points + 1-sentence takeaway:\n\n[text]",
+      "Rewrite the below in a [tone] voice, keeping it under [N] words:\n\n[text]",
+    ],
+    coding: [
+      "You are a senior [language] engineer. Review this code for bugs, performance and style. Return a list of issues + suggested fixes:\n\n[code]",
+      "Write a unit test suite for this function. Cover edge cases. Use [test framework]:\n\n[function]",
+      "Explain what this code does in plain English, then suggest 2 optimizations:\n\n[code]",
+    ],
+    marketing: [
+      "Write 5 email subject lines for [campaign] that are under 50 chars and high-CTR.\nThen write the body email: value-first, one CTA.",
+      "Create a landing page copy for [product]. Sections: hero headline, subhead, 3 benefits, social proof placeholder, final CTA.",
+      "Rewrite this product description for [audience]. Keep it under 120 words, benefit-led:\n\n[text]",
+    ],
+    learning: [
+      "Teach me [concept] as if I'm a beginner. Use one analogy, then 3 progressively harder examples.",
+      "Create a 30-day study plan for [skill]. Daily time: [N] min. Format as a Markdown table with milestones.",
+      "Quiz me on [topic]. 5 multiple-choice questions, then reveal answers with explanations.",
+    ],
+    translation: [
+      "Translate [text] to [target language]. Keep the tone and technical terms. Provide a 2nd more natural version.",
+      "Translate the following UI strings for an [product] app. Keep them short, UI-friendly:\n\n[strings]",
+    ],
+  };
+  function gen() {
+    const c = catS.value;
+    setOut(out.out, T[c].join("\n\n---\n\n"), "ok");
+  }
+});
+
+/* ---------- ai: llm-json-schemer ---------- */
+define("llm-json-schemer", "ai", "braces", ["ai", "llm", "json", "output", "schema", "زبان"], function (root, api) {
+  const t = api.t;
+  root.append(api.note("ljs.note"));
+  const taskI = api.input({ placeholder: t("ljs.taskPh") });
+  const fieldsI = api.input({ placeholder: t("ljs.fieldsPh") });
+  const out = api.outputBar("c.result");
+  root.append(api.field("ljs.task", taskI));
+  root.append(api.field("ljs.fields", fieldsI));
+  root.append(api.btn("c.generate", "btn-primary", gen, "zap"));
+  root.append(out.node);
+  function gen() {
+    const task = taskI.value.trim() || "extract key entities";
+    const fields = fieldsI.value.split(",").map((s) => s.trim()).filter(Boolean);
+    const schema = {};
+    const required = [];
+    fields.forEach((f) => {
+      if (/^(id|name|title|type|label|key|code|url)$/i.test(f)) { schema[f] = "string"; }
+      else if (/^(count|total|num|number|qty|price|amount|age|size)$/i.test(f)) { schema[f] = "integer"; }
+      else if (/^(score|rating|confidence|prob)$/i.test(f)) { schema[f] = "number"; }
+      else if (/^(is|has|can|should|valid)$/i.test(f)) { schema[f] = "boolean"; }
+      else if (/\[\]$/.test(f)) { schema[f.slice(0, -2)] = "array"; }
+      else schema[f] = "string";
+      required.push(f);
+    });
+    const example = {};
+    Object.keys(schema).forEach((k) => {
+      const ty = schema[k];
+      example[k] = ty === "integer" ? 0 : ty === "number" ? 0.5 : ty === "boolean" ? false : ty === "array" ? [] : "";
+    });
+    const prompt = [
+      "You are a structured-output assistant. Always respond with a single valid JSON object — no markdown, no code fences, no extra text.",
+      "",
+      "Task: " + task,
+      "",
+      "JSON Schema (draft-07):",
+      JSON.stringify({ $schema: "http://json-schema.org/draft-07/schema#", type: "object", properties: schema, required, additionalProperties: false }, null, 2),
+      "",
+      "Example response shape:",
+      JSON.stringify(example, null, 2),
+    ].join("\n");
+    setOut(out.out, prompt, "ok");
+  }
+});
+
+/* ---------- ai: ai-text-analysis ---------- */
+define("ai-text-analysis", "ai", "activity", ["ai", "text", "analysis", "sentiment", "reading", "متن", "تحلیل"], function (root, api) {
+  const t = api.t;
+  root.append(api.note("ata.note"));
+  const ta = api.textarea({ placeholder: t("ata.ph") });
+  ta.style.minHeight = "160px";
+  const stats = api.el("div", { class: "stat-grid" });
+  const sentM = api.el("div", { class: "output", style: "margin-top:12px" });
+  root.append(api.field("c.input", ta));
+  root.append(stats);
+  root.append(api.el("div", { class: "output-bar" }, [api.el("span", { class: "kicker", text: t("ata.sentiment") }), api.el("div", { class: "output-actions" }, [
+    api.el("button", { class: "btn btn-ghost btn-sm", html: api.icon("copy") + `<span>${t("c.copy")}</span>`, onclick: () => api.copy(sentM.textContent || "") })
+  ])]));
+  root.append(sentM);
+  const POS = new Set(["good","great","love","like","excellent","happy","best","amazing","perfect","awesome","wonderful","fantastic","nice","beautiful","win","success","positive","improve","better","thank","thanks","helpful","easy","fast","clean","smooth"]);
+  const NEG = new Set(["bad","hate","terrible","awful","worst","horrible","poor","broken","slow","difficult","problem","error","fail","failure","wrong","noisy","messy","ugly","disappoint","disappointed","frustrat","annoying","rude","expensive","complicated","confusing","confused"]);
+  function tick() {
+    const s = ta.value || "";
+    const words = (s.trim().match(/\S+/g) || []).length;
+    const chars = Array.from(s).length;
+    const sentences = (s.match(/[.!?؟…]+/g) || []).length || (s.trim() ? 1 : 0);
+    const lines = s ? s.split(/\r?\n/).length : 0;
+    const toks = Math.round(chars / 4) || 0;
+    const read = words / 180;
+    const w = (s.toLowerCase().match(/\b\w{2,}\b/g) || []);
+    const pos = w.filter((x) => POS.has(x)).length;
+    const neg = w.filter((x) => NEG.has(x)).length;
+    const score = pos + neg === 0 ? 0 : Math.round(((pos - neg) / (pos + neg)) * 100);
+    const label = pos + neg === 0 ? t("ata.neutral") : score >= 50 ? t("ata.pos") : score <= -50 ? t("ata.neg") : t("ata.mild");
+    const rows = [
+      [words, t("te.words")], [chars, t("te.chars")], [sentences, t("te.sentences")],
+      [lines, t("te.lines")], [toks, t("te.tokens")],
+      [read < 1 ? "<1" : Math.ceil(read * 10) / 10, t("te.read") + " (" + t("te.min") + ")"],
+    ];
+    stats.innerHTML = "";
+    rows.forEach((r) => stats.append(api.el("div", { class: "stat" }, [api.el("b", { text: String(r[0]) }), api.el("span", { text: r[1] })])));
+    setOut(sentM, t("ata.score") + ": " + (score > 0 ? "+" : "") + score + " \u2014 " + label, pos === 0 && neg === 0 ? "" : "ok");
+  }
+  ta.addEventListener("input", tick);
+  tick();
+});
+
 /* ---------- dev: json-formatter ---------- */
 define("json-formatter", "dev", "braces", ["json", "format", "minify", "pretty", "فرمت", "جیسون"], function (root, api) {
   const t = api.t;

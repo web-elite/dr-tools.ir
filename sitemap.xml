@@ -38,7 +38,7 @@
   <url><loc>https://dr-tools.ir/cat/date</loc><lastmod>2026-09-19</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://dr-tools.ir/cat/convert</loc><lastmod>2026-09-19</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
 
-  <!-- ابزارها (تمام ۵۷ ابزار) -->
+  <!-- ابزارها (تمام ۶۵ ابزار) -->
   <url><loc>https://dr-tools.ir/tools/tg-webhook</loc><lastmod>2026-09-19</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://dr-tools.ir/tools/tg-send</loc><lastmod>2026-09-19</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://dr-tools.ir/tools/prompt-builder</loc><lastmod>2026-09-19</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
@@ -96,4 +96,14 @@
   <url><loc>https://dr-tools.ir/tools/sort-lines</loc><lastmod>2026-09-19</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://dr-tools.ir/tools/slug-generator</loc><lastmod>2026-09-19</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://dr-tools.ir/tools/find-replace</loc><lastmod>2026-09-19</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- ابزارهای جدید هوش مصنوعی -->
+  <url><loc>https://dr-tools.ir/tools/prompt-templates</loc><lastmod>2026-09-20</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dr-tools.ir/tools/regex-generator</loc><lastmod>2026-09-20</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dr-tools.ir/tools/json-to-sql</loc><lastmod>2026-09-20</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dr-tools.ir/tools/yaml-to-json</loc><lastmod>2026-09-20</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dr-tools.ir/tools/csv-to-json</loc><lastmod>2026-09-20</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dr-tools.ir/tools/json-schema</loc><lastmod>2026-09-20</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dr-tools.ir/tools/llm-json-schemer</loc><lastmod>2026-09-20</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://dr-tools.ir/tools/ai-text-analysis</loc><lastmod>2026-09-20</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>
